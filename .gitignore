@@ -1,0 +1,82 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (seguridad: no subir contraseñas ni cadenas de conexión)
+.env
+.env*.local
+.env.development
+.env.test
+.env.production
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# neon cli context
+.neon
+neon.ts
+
+# IDE y Editores de código
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Carpetas de Agentes de IA y configuración de asistentes (excluidas del repo)
+.agents/
+.claude/
+.cursor/
+.devin/
+AGENTS.md
+skills-lock.json
+
+# Carpetas de documentación académica, tesis y perfiles (excluidas del repo de código)
+DOCUMENTACION/
+PERFIL DE PROYECTO/
+part.txt
+
+# Scripts temporales
+scripts/
+*.tmp
+*.log
+
+DOCUMENTACION/**
+PERFIL DE PROYECTO/**
+headings_cine.txt
+extracted_*.txt
+perfil_text_extracted.txt

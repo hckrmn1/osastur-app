@@ -1,0 +1,110 @@
+@import "tailwindcss";
+
+:root {
+  /* PALETA CORPORATIVA SOBRIA OSASTUR (Verde Institucional & Neutros Finos) */
+  --osastur-green-primary: #3d7912;
+  --osastur-green-hover: #31620e;
+  --osastur-green-light: #4d8f1e;
+  --osastur-green-dark: #274e0c;
+
+  --osastur-dark-base: #090c09;
+  --osastur-dark-surface: #111611;
+  --osastur-dark-border: #1e261e;
+  --osastur-dark-hover: #172017;
+
+  --background: #090c09;
+  --foreground: #f1f5f9;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Tarjetas limpias con elevación sutil y sin efectos artificiales */
+.osastur-card {
+  background-color: #111611;
+  border: 1px solid #1e261e;
+  border-radius: 0.875rem;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.osastur-card:hover {
+  border-color: #273427;
+  box-shadow: 0 4px 16px -4px rgba(0, 0, 0, 0.4);
+}
+
+/* ============================================================== */
+/* ESTILOS DE IMPRESIÓN PROFESIONAL (ESTÁNDAR CONTABLE / HOJA BLANCA) */
+/* ============================================================== */
+@media print {
+  @page {
+    margin: 1cm;
+    size: letter portrait;
+  }
+
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    font-size: 11pt !important;
+  }
+
+  /* Ocultar toda la interfaz web, encabezados, banners de flota, botones y navegación */
+  header,
+  nav,
+  footer,
+  aside,
+  button,
+  input,
+  select,
+  .no-print,
+  .banner-flota-sincronizada {
+    display: none !important;
+  }
+
+  /* Si se imprime el reporte contable del Administrador o Gerencia */
+  .hoja-impresion-contable,
+  .hoja-impresion-contable * {
+    visibility: visible !important;
+    color: #000000 !important;
+  }
+
+  .hoja-impresion-contable {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+  }
+
+  table {
+    page-break-inside: auto;
+    border-collapse: collapse !important;
+    width: 100% !important;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tfoot {
+    display: table-footer-group;
+  }
+}

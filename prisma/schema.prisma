@@ -1,0 +1,216 @@
+// prisma schema para neon postgresql serverless
+// sistema web de venta de pasajes y gestion de encomiendas osastur
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TipoFlota {
+  LEITO_SUITE_DOBLE_PISO
+  SEMI_CAMA_UN_PISO
+  BUS_CAMA_CLIMATIZADO
+}
+
+enum Rol {
+  GERENTE
+  ADMIN
+  BOLETERO
+  BODEGUERO
+  AUXILIAR_ABORDAJE
+  CONDUCTOR
+}
+
+enum EstadoAsiento {
+  DISPONIBLE
+  BLOQUEADO
+  VENDIDO
+  RESERVADO
+}
+
+enum EstadoViaje {
+  PROGRAMADO
+  EN_EMBARQUE
+  EN_RUTA
+  FINALIZADO
+  CANCELADO
+}
+
+enum EstadoEncomienda {
+  RECEPCIONADO
+  EN_ESPERA
+  EN_TRANSITO
+  ARRIBADO_DESTINO
+  ENTREGADO
+  DEVUELTO
+}
+
+enum EstadoCaja {
+  ABIERTA
+  CERRADA
+}
+
+// gestion de sucursales y terminales
+model Sucursal {
+  id                  String       @id @default(uuid())
+  nombre              String
+  departamento        String
+  direccion           String
+  telefono            String?
+  createdAt           DateTime     @default(now())
+
+  usuarios            Usuario[]
+  viajesOrigen        Viaje[]      @relation("ViajesOrigen")
+  viajesDestino       Viaje[]      @relation("ViajesDestino")
+  encomiendasOrigen   Encomienda[] @relation("EncomiendasOrigen")
+  encomiendasDestino  Encomienda[] @relation("EncomiendasDestino")
+  cajas               CajaDiaria[]
+}
+
+// usuarios y control de acceso
+model Usuario {
+  id              String       @id @default(uuid())
+  email           String       @unique
+  passwordHash    String
+  nombreCompleto  String
+  rol             Rol          @default(BOLETERO)
+  activo          Boolean      @default(true)
+  sucursalId      String
+  sucursal        Sucursal     @relation(fields: [sucursalId], references: [id])
+  createdAt       DateTime     @default(now())
+
+  boletos         Boleto[]
+  encomiendas     Encomienda[]
+  cajas           CajaDiaria[]
+}
+
+// parque automotor buses
+model Bus {
+  id              String       @id @default(uuid())
+  placa           String       @unique
+  marcaModelo     String
+  tipoFlota       TipoFlota    @default(LEITO_SUITE_DOBLE_PISO)
+  pisos           Int          @default(1)
+  totalAsientos   Int
+  choferNombre    String?
+  activo          Boolean      @default(true)
+  createdAt       DateTime     @default(now())
+
+  viajes          Viaje[]
+}
+
+// programacion de viajes e itinerarios
+model Viaje {
+  id                  String         @id @default(uuid())
+  busId               String
+  bus                 Bus            @relation(fields: [busId], references: [id])
+  origenId            String
+  origen              Sucursal       @relation("ViajesOrigen", fields: [origenId], references: [id])
+  destinoId           String
+  destino             Sucursal       @relation("ViajesDestino", fields: [destinoId], references: [id])
+  fechaHoraSalida     DateTime
+  fechaHoraLlegadaEst DateTime
+  precioBasePiso1     Decimal        @db.Decimal(10, 2)
+  precioBasePiso2     Decimal?       @db.Decimal(10, 2)
+  estado              EstadoViaje    @default(PROGRAMADO)
+  createdAt           DateTime       @default(now())
+
+  asientos            AsientoViaje[]
+  encomiendas         Encomienda[]
+}
+
+// distribucion de asientos y control de concurrencia
+model AsientoViaje {
+  id              String         @id @default(uuid())
+  viajeId         String
+  viaje           Viaje          @relation(fields: [viajeId], references: [id], onDelete: Cascade)
+  numeroAsiento   Int
+  piso            Int            @default(1)
+  ubicacion       String         @default("VENTANA")
+  estado          EstadoAsiento  @default(DISPONIBLE)
+  bloqueadoHasta  DateTime?
+  bloqueadoPor    String?
+
+  boleto          Boleto?
+
+  @@unique([viajeId, numeroAsiento, piso])
+}
+
+// venta de boletos y registro de qr
+model Boleto {
+  id              String        @id @default(uuid())
+  codigoBoleto    String        @unique
+  asientoViajeId  String        @unique
+  asientoViaje    AsientoViaje  @relation(fields: [asientoViajeId], references: [id])
+  usuarioId       String
+  usuario         Usuario       @relation(fields: [usuarioId], references: [id])
+  nombrePasajero  String
+  ciPasajero      String
+  telefono        String?
+  precioPagado    Decimal       @db.Decimal(10, 2)
+  qrHash          String        @unique
+  abordado        Boolean       @default(false)
+  fechaEmision    DateTime      @default(now())
+}
+
+// gestion de encomiendas y trazabilidad
+model Encomienda {
+  id                  String            @id @default(uuid())
+  codigoGuia          String            @unique
+  origenId            String
+  origen              Sucursal          @relation("EncomiendasOrigen", fields: [origenId], references: [id])
+  destinoId           String
+  destino             Sucursal          @relation("EncomiendasDestino", fields: [destinoId], references: [id])
+  viajeId             String?
+  viaje               Viaje?            @relation(fields: [viajeId], references: [id])
+  usuarioId           String
+  usuario             Usuario           @relation(fields: [usuarioId], references: [id])
+  
+  nombreRemitente     String
+  ciRemitente         String
+  telRemitente        String
+  nombreDestinatario  String
+  ciDestinatario      String
+  telDestinatario     String
+  
+  descripcion         String
+  pesoKg              Decimal           @db.Decimal(10, 2)
+  tarifaCalculada     Decimal           @db.Decimal(10, 2)
+  estado              EstadoEncomienda  @default(RECEPCIONADO)
+  qrHash              String            @unique
+  fechaRegistro       DateTime          @default(now())
+  fechaEntrega        DateTime?
+}
+
+// arqueo y control de caja diaria
+model CajaDiaria {
+  id                  String            @id @default(uuid())
+  usuarioId           String
+  usuario             Usuario           @relation(fields: [usuarioId], references: [id])
+  sucursalId          String
+  sucursal            Sucursal          @relation(fields: [sucursalId], references: [id])
+  fechaApertura       DateTime          @default(now())
+  fechaCierre         DateTime?
+  montoInicial        Decimal           @default(0.00) @db.Decimal(10, 2)
+  totalVentasBoletos  Decimal           @default(0.00) @db.Decimal(10, 2)
+  totalEncomiendas    Decimal           @default(0.00) @db.Decimal(10, 2)
+  montoFinalReal      Decimal?          @db.Decimal(10, 2)
+  diferencia          Decimal?          @db.Decimal(10, 2)
+  estado              EstadoCaja        @default(ABIERTA)
+
+  movimientos         MovimientoCaja[]
+}
+
+model MovimientoCaja {
+  id              String        @id @default(uuid())
+  cajaId          String
+  caja            CajaDiaria    @relation(fields: [cajaId], references: [id], onDelete: Cascade)
+  tipoOperacion   String
+  monto           Decimal       @db.Decimal(10, 2)
+  referenciaId    String?
+  fecha           DateTime      @default(now())
+}
